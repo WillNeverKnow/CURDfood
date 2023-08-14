@@ -18,7 +18,7 @@ const db = firebase.firestore();
 
 const userForm = document.getElementById('userForm');
 const userData = document.getElementById('userData');
-const photoUrl = document.getElementById('photoUrl');
+const photoFileInput  = document.getElementById('photoUrl');
 
 // Function to update form data for editing
 function updateFormData(doc) {
