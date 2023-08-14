@@ -63,49 +63,66 @@ function updateFormData(doc) {
 
 // Function to handle form submission for new data
 function handleSubmit(event) {
-    event.preventDefault();
-    const username = document.getElementById('username').value;
-    const address = document.getElementById('address').value;
-    const direction = document.getElementById('direction').value;
-    const food = document.getElementById('food').value;
-    const photoFile = photoFileInput.files[0];
+  event.preventDefault();
+  const username = document.getElementById('username').value;
+  const address = document.getElementById('address').value;
+  const direction = document.getElementById('direction').value;
+  const food = document.getElementById('food').value;
+  const photoFile = photoFileInput.files[0];
 
-    // Validate that a photo was selected
-    if (!photoFile) {
-        alert('Please select an image.');
-        return;
-    }
+  // Validate that a photo was selected
+  if (!photoFile) {
+    alert('Please select an image.');
+    return;
+  }
 
-    // Upload the image to Firebase Storage
-    const storageRef = firebase.storage().ref().child('food_images/' + photoFile.name);
-    storageRef.put(photoFile)
-        .then((snapshot) => {
-            // Get the download URL of the uploaded image
-            return snapshot.ref.getDownloadURL();
-        })
-        .then((photoUrl) => {
-            // Continue with the submission, including the photoUrl
-            return db.collection('foods').add({
-                username: username,
-                address: address,
-                direction: direction,
-                food: food,
-                photoUrl: photoUrl,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            });
-        })
-        .then(() => {
+  // Upload the image to Firebase Storage
+  const storageRef = firebase.storage().ref().child('food_images/' + photoFile.name);
+  const uploadTask = storageRef.put(photoFile);
+
+  // Monitor the image upload progress
+  uploadTask.on(
+    'state_changed',
+    (snapshot) => {
+      // Progress monitoring (optional)
+      const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      console.log('Upload progress: ' + progress + '%');
+    },
+    (error) => {
+      // Handle upload error
+      console.error('Error uploading image: ', error);
+      alert('An error occurred while uploading the image. Please try again later.');
+    },
+    () => {
+      // Upload completed, get the download URL
+      uploadTask.snapshot.ref.getDownloadURL().then((photoUrl) => {
+        // Continue with the submission, including the photoUrl
+        db.collection('foods')
+          .add({
+            username: username,
+            address: address,
+            direction: direction,
+            food: food,
+            photoUrl: photoUrl,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          })
+          .then(() => {
             alert('Data submitted (with image)!');
             userForm.reset();
-        })
-        .catch((error) => {
-            console.error('Error uploading document: ', error);
+          })
+          .catch((error) => {
+            console.error('Error adding document: ', error);
             alert('An error occurred. Please try again later.');
-        });
+          });
+      });
+    }
+  );
 }
 
 // Attach an event listener to the form for handling data submission
 userForm.addEventListener('submit', handleSubmit);
+// Attach an event listener to the form for handling data submission
+
 // Function to display user data in the table
 function displayUserData(doc) {
     console.log("Displaying data for doc:", doc.id);
