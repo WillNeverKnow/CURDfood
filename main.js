@@ -81,12 +81,11 @@ async function handleSubmit(event) {
     const address = document.getElementById('address').value;
     const direction = document.getElementById('direction').value;
     const food = document.getElementById('food').value;
-    const photoUrl = document.getElementById('photoUrl');
+    const photoUrlInput = document.getElementById('photoUrl');
 
     // Check if an image is selected
-    if (photoUrl.files.length > 0) {
-        // Get the selected image file
-        const imageFile = photoUrl.files[0];
+    if (photoUrlInput.files.length > 0) {
+        const imageFile = photoUrlInput.files[0]; // Get the selected image file
 
         try {
             // Compress the image to 20KB
@@ -156,59 +155,10 @@ async function handleSubmit(event) {
     }
 }
 
-// Function to compress an image to a target size (in KB)
-// Function to compress an image to a target size (in KB)
-function compressImage(imageFile, targetSizeKB) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            const img = new Image();
-            img.src = event.target.result;
+// ... (previously provided displayUserData and handleSearch functions)
 
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                // Convert canvas image to Blob
-                canvas.toBlob(
-                    (blob) => {
-                        if (!blob) {
-                            // Handle the case when the blob is undefined
-                            reject(new Error('Compressed blob is undefined'));
-                            return;
-                        }
-
-                        // Compress the Blob to the target size
-                        if (blob.size <= targetSizeKB * 1024) {
-                            // If the image is already smaller than the target size, resolve with the original Blob
-                            resolve(blob);
-                            return;
-                        }
-
-                        // ... (rest of the compression logic)
-                    },
-                    'image/jpeg',
-                    0.7 // Initial quality setting
-                );
-            };
-
-            img.onerror = (error) => {
-                reject(error);
-            };
-        };
-
-        reader.onerror = (error) => {
-            reject(error);
-        };
-
-        reader.readAsDataURL(imageFile);
-    });
-}
-
-userForm.addEventListener('submit', handleSubmit);;
+// Attach an event listener to the form for handling data submission
+userForm.addEventListener('submit', handleSubmit);
 
 // Function to display user data in the table
 function displayUserData(doc) {
