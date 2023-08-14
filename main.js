@@ -68,18 +68,26 @@ function handleSubmit(event) {
     const address = document.getElementById('address').value;
     const direction = document.getElementById('direction').value;
     const food = document.getElementById('food').value;
+    const photoUrl = document.getElementById('photoUrl').value;
 
-    // No image selected, submit data without an image
+    // Validate that the photoUrl is not empty
+    if (!photoUrl) {
+        alert('Please select an image.');
+        return;
+    }
+
+    // Continue with the submission
     db.collection('foods')
         .add({
             username: username,
             address: address,
             direction: direction,
             food: food,
+            photoUrl: photoUrl,
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         })
         .then(() => {
-            alert('Data submitted (without image)!');
+            alert('Data submitted (with image)!');
             userForm.reset();
         })
         .catch((error) => {
@@ -87,6 +95,7 @@ function handleSubmit(event) {
             alert('An error occurred. Please try again later.');
         });
 }
+
 
 // ... (rest of the code remains the same)
 
@@ -134,6 +143,17 @@ function displayUserData(doc) {
     deleteButton.setAttribute('class', 'btn btn-danger');
     deleteButton.addEventListener('click', () => {
         // Delete the Firestore document
+         const photoUrl = doc.data().photoUrl;
+    if (photoUrl) {
+        const storageRef = firebase.storage().refFromURL(photoUrl);
+        storageRef.delete()
+            .then(() => {
+                console.log('Photo successfully deleted from storage.');
+            })
+            .catch((error) => {
+                console.error('Error deleting photo from storage: ', error);
+            });
+    }
         db.collection('foods')
             .doc(doc.id)
             .delete()
