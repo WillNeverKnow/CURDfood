@@ -81,12 +81,12 @@ async function handleSubmit(event) {
     const address = document.getElementById('address').value;
     const direction = document.getElementById('direction').value;
     const food = document.getElementById('food').value;
-    const photoUrl = document.getElementById('photoUrl');
+    const photoUrlInput = document.getElementById('photoUrl');
 
     // Check if an image is selected
-    if (photoUrl.files.length > 0) {
+    if (photoUrlInput.files.length > 0) {
         // Get the selected image file
-        const imageFile = photoUrl.files[0];
+        const imageFile = photoUrlInput.files[0];
 
         try {
             // Compress the image to 20KB
