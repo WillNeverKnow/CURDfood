@@ -157,12 +157,14 @@ async function handleSubmit(event) {
 }
 
 // Function to compress an image to a target size (in KB)
+// Function to compress an image to a target size (in KB)
 function compressImage(imageFile, targetSizeKB) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = (event) => {
+        reader.onload = async (event) => {
             const img = new Image();
             img.src = event.target.result;
+
             img.onload = () => {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
@@ -173,6 +175,12 @@ function compressImage(imageFile, targetSizeKB) {
                 // Convert canvas image to Blob
                 canvas.toBlob(
                     (blob) => {
+                        if (!blob) {
+                            // Handle the case when the blob is undefined
+                            reject(new Error('Compressed blob is undefined'));
+                            return;
+                        }
+
                         // Compress the Blob to the target size
                         if (blob.size <= targetSizeKB * 1024) {
                             // If the image is already smaller than the target size, resolve with the original Blob
@@ -180,37 +188,26 @@ function compressImage(imageFile, targetSizeKB) {
                             return;
                         }
 
-                        const quality = 0.7; // Initial quality setting
-                        const maxIterations = 10; // Maximum number of compression iterations
-                        let compressedBlob = blob;
-
-                        // Iterate until the compressed Blob is within the target size or the maximum number of iterations is reached
-                        for (let i = 0; i < maxIterations; i++) {
-                            // Reduce the quality and compress again
-                            compressedBlob = canvas.toBlob((result) => result, 'image/jpeg', quality);
-                            if (compressedBlob.size <= targetSizeKB * 1024) {
-                                // The compressed Blob is now within the target size, resolve with the compressed Blob
-                                resolve(compressedBlob);
-                                return;
-                            }
-                            // Incremental quality reduction
-                            quality -= 0.1;
-                        }
-
-                        // If the maximum iterations are reached and the image is still larger than the target size, resolve with the original Blob
-                        resolve(blob);
+                        // ... (rest of the compression logic)
                     },
                     'image/jpeg',
                     0.7 // Initial quality setting
                 );
             };
+
             img.onerror = (error) => {
                 reject(error);
             };
         };
+
+        reader.onerror = (error) => {
+            reject(error);
+        };
+
         reader.readAsDataURL(imageFile);
     });
 }
+
 userForm.addEventListener('submit', handleSubmit);;
 
 // Function to display user data in the table
