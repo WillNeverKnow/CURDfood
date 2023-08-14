@@ -23,24 +23,17 @@ const photoUrl = document.getElementById('photoUrl');
 // Function to update form data for editing
 function updateFormData(doc) {
     document.getElementById('username').value = doc.data().username;
-
     document.getElementById('address').value = doc.data().address;
-
     document.getElementById('direction').value = doc.data().direction;
     document.getElementById('photoUrl').value = doc.data().photoUrl;
-
-
     document.getElementById('food').value = doc.data().food;
-
 
     // Remove the previous submit event listener and add a new one for updating data
     userForm.removeEventListener('submit', handleSubmit);
     userForm.addEventListener('submit', (event) => {
         event.preventDefault();
         const editedUsername = document.getElementById('username').value;
-
         const editedAddress = document.getElementById('address').value;
-
         const editedDirection = document.getElementById('direction').value;
         const editedPhotoUrl = document.getElementById('photoUrl').value;
         const editedFood = document.getElementById('food').value;
@@ -50,16 +43,10 @@ function updateFormData(doc) {
             .doc(doc.id)
             .update({
                 username: editedUsername,
-
-
                 address: editedAddress,
-
                 direction: editedDirection,
                 photoUrl: editedPhotoUrl,
                 food: editedFood,
-
-
-
             })
             .then(() => {
                 alert('Data successfully updated!');
@@ -75,139 +62,36 @@ function updateFormData(doc) {
 }
 
 // Function to handle form submission for new data
-async function compressImage(imageFile) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            const img = new Image();
-            img.src = event.target.result;
-
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-
-                // Set the canvas dimensions to the image's natural size
-                canvas.width = img.naturalWidth;
-                canvas.height = img.naturalHeight;
-
-                // Draw the image on the canvas
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                // Convert canvas image to Blob with high image quality
-                canvas.toBlob(
-                    (blob) => {
-                        if (!blob) {
-                            // Handle the case when the blob is undefined
-                            reject(new Error('Compressed blob is undefined'));
-                            return;
-                        }
-
-                        resolve(blob);
-                    },
-                    'image/jpeg', // Use JPEG format
-                    0.8 // High quality setting
-                );
-            };
-
-            img.onerror = (error) => {
-                reject(error);
-            };
-        };
-
-        reader.onerror = (error) => {
-            reject(error);
-        };
-
-        reader.readAsDataURL(imageFile);
-    });
-}
-
-// Function to handle form submission for new data
-async function handleSubmit(event) {
+function handleSubmit(event) {
     event.preventDefault();
     const username = document.getElementById('username').value;
     const address = document.getElementById('address').value;
     const direction = document.getElementById('direction').value;
     const food = document.getElementById('food').value;
-    const photoUrlInput = document.getElementById('photoUrl');
 
-    // Check if an image is selected
-    if (photoUrlInput.files.length > 0) {
-        const imageFile = photoUrlInput.files[0]; // Get the selected image file
-
-        try {
-            // Compress the image as much as possible
-            const compressedImage = await compressImage(imageFile);
-
-            // Generate a unique filename for the image based on the food value
-            const filename = `${food.toLowerCase()}_${Date.now()}.jpg`;
-
-            // Upload the compressed image to Firebase Storage
-            const storageRef = firebase.storage().ref(`food_images/${filename}`);
-            const uploadTask = storageRef.put(compressedImage);
-
-            // Monitor the upload progress
-            uploadTask.on('state_changed',
-                null,
-                (error) => {
-                    console.error('Error uploading image: ', error);
-                    alert('An error occurred while uploading the image. Please try again later.');
-                },
-                () => {
-                    // Image uploaded successfully
-                    // Get the download URL of the uploaded image
-                    uploadTask.snapshot.ref.getDownloadURL()
-                        .then((downloadURL) => {
-                            // Store the data in Firestore, including the image URL
-                            db.collection('foods')
-                                .add({
-                                    username: username,
-                                    address: address,
-                                    direction: direction,
-                                    food: food,
-                                    photoUrl: downloadURL, // Store the image URL
-                                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                                })
-                                .then(() => {
-                                    alert('Data and image successfully submitted!');
-                                    userForm.reset();
-                                })
-                                .catch((error) => {
-                                    console.error('Error adding document: ', error);
-                                    alert('An error occurred. Please try again later.');
-                                });
-                        });
-                });
-        } catch (error) {
-            console.error('Error compressing image: ', error);
-            alert('An error occurred while compressing the image. Please try again later.');
-        }
-    } else {
-        // No image selected, submit data without an image
-        db.collection('foods')
-            .add({
-                username: username,
-                address: address,
-                direction: direction,
-                food: food,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            })
-            .then(() => {
-                alert('Data submitted (without image)!');
-                userForm.reset();
-            })
-            .catch((error) => {
-                console.error('Error adding document: ', error);
-                alert('An error occurred. Please try again later.');
-            });
-    }
+    // No image selected, submit data without an image
+    db.collection('foods')
+        .add({
+            username: username,
+            address: address,
+            direction: direction,
+            food: food,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        })
+        .then(() => {
+            alert('Data submitted (without image)!');
+            userForm.reset();
+        })
+        .catch((error) => {
+            console.error('Error adding document: ', error);
+            alert('An error occurred. Please try again later.');
+        });
 }
 
 // ... (rest of the code remains the same)
 
 // Attach an event listener to the form for handling data submission
 userForm.addEventListener('submit', handleSubmit);
-
 // Function to display user data in the table
 function displayUserData(doc) {
     console.log("Displaying data for doc:", doc.id);
