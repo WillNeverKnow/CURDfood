@@ -68,27 +68,41 @@ function handleSubmit(event) {
     const address = document.getElementById('address').value;
     const direction = document.getElementById('direction').value;
     const food = document.getElementById('food').value;
+    const photoFile = photoFileInput.files[0];
 
-    // No image selected, submit data without an image
-    db.collection('foods')
-        .add({
-            username: username,
-            address: address,
-            direction: direction,
-            food: food,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+    // Validate that a photo was selected
+    if (!photoFile) {
+        alert('Please select an image.');
+        return;
+    }
+
+    // Upload the image to Firebase Storage
+    const storageRef = firebase.storage().ref().child('food_images/' + photoFile.name);
+    storageRef.put(photoFile)
+        .then((snapshot) => {
+            // Get the download URL of the uploaded image
+            return snapshot.ref.getDownloadURL();
+        })
+        .then((photoUrl) => {
+            // Continue with the submission, including the photoUrl
+            return db.collection('foods').add({
+                username: username,
+                address: address,
+                direction: direction,
+                food: food,
+                photoUrl: photoUrl,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            });
         })
         .then(() => {
-            alert('Data submitted (without image)!');
+            alert('Data submitted (with image)!');
             userForm.reset();
         })
         .catch((error) => {
-            console.error('Error adding document: ', error);
+            console.error('Error uploading document: ', error);
             alert('An error occurred. Please try again later.');
         });
 }
-
-// ... (rest of the code remains the same)
 
 // Attach an event listener to the form for handling data submission
 userForm.addEventListener('submit', handleSubmit);
