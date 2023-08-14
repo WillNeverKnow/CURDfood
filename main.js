@@ -88,8 +88,8 @@ async function handleSubmit(event) {
         const imageFile = photoUrlInput.files[0]; // Get the selected image file
 
         try {
-            // Compress the image to 20KB
-            const compressedImage = await compressImage(imageFile, 20); // 20KB target size
+            // Compress the image as much as possible
+            const compressedImage = await compressImage(imageFile);
 
             // Generate a unique filename for the image based on the food value
             const filename = `${food.toLowerCase()}_${Date.now()}.jpg`;
@@ -155,7 +155,7 @@ async function handleSubmit(event) {
     }
 }
 
-// ... (previously provided displayUserData and handleSearch functions)
+// ... (rest of the code remains the same)
 
 // Attach an event listener to the form for handling data submission
 userForm.addEventListener('submit', handleSubmit);
