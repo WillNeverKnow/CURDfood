@@ -68,26 +68,18 @@ function handleSubmit(event) {
     const address = document.getElementById('address').value;
     const direction = document.getElementById('direction').value;
     const food = document.getElementById('food').value;
-    const photoUrl = document.getElementById('photoUrl').value;
 
-    // Validate that the photoUrl is not empty
-    if (!photoUrl) {
-        alert('Please select an image.');
-        return;
-    }
-
-    // Continue with the submission
+    // No image selected, submit data without an image
     db.collection('foods')
         .add({
             username: username,
             address: address,
             direction: direction,
             food: food,
-            photoUrl: photoUrl,
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         })
         .then(() => {
-            alert('Data submitted (with image)!');
+            alert('Data submitted (without image)!');
             userForm.reset();
         })
         .catch((error) => {
@@ -95,7 +87,6 @@ function handleSubmit(event) {
             alert('An error occurred. Please try again later.');
         });
 }
-
 
 // ... (rest of the code remains the same)
 
