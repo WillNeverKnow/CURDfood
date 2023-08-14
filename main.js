@@ -9,128 +9,145 @@ const firebaseConfig = {
     appId: "1:675664862411:web:d32ce4914638ac95014f4e",
     measurementId: "G-JW5PHGM5RC"
 };
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
 // Initialize Firestore
 const db = firebase.firestore();
+// Initialize Firebase with your project's configuration (you should have already done this before)
+// ...
 
-// DOM elements
 const userForm = document.getElementById('userForm');
 const userData = document.getElementById('userData');
-const searchInput = document.getElementById('searchInput');
-const searchButton = document.getElementById('searchButton');
-const usernameInput = document.getElementById('username');
-const addressInput = document.getElementById('address');
-const directionInput = document.getElementById('direction');
-const photoFileInput = document.getElementById('photoUrl');
-const foodInput = document.getElementById('food');
+const photoUrl = document.getElementById('photoUrl');
 
 // Function to update form data for editing
 function updateFormData(doc) {
-    const data = doc.data();
-    usernameInput.value = data.username;
-    addressInput.value = data.address;
-    directionInput.value = data.direction;
-    photoFileInput.value = data.photoUrl;
-    foodInput.value = data.food;
+    document.getElementById('username').value = doc.data().username;
+
+    document.getElementById('address').value = doc.data().address;
+
+    document.getElementById('direction').value = doc.data().direction;
+    document.getElementById('photoUrl').value = doc.data().photoUrl;
+
+
+    document.getElementById('food').value = doc.data().food;
+
 
     // Remove the previous submit event listener and add a new one for updating data
     userForm.removeEventListener('submit', handleSubmit);
-    userForm.addEventListener('submit', handleUpdate);
+    userForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const editedUsername = document.getElementById('username').value;
+
+        const editedAddress = document.getElementById('address').value;
+
+        const editedDirection = document.getElementById('direction').value;
+        const editedPhotoUrl = document.getElementById('photoUrl').value;
+        const editedFood = document.getElementById('food').value;
+
+        // Update the Firestore document with the edited data
+        db.collection('foods')
+            .doc(doc.id)
+            .update({
+                username: editedUsername,
+
+
+                address: editedAddress,
+
+                direction: editedDirection,
+                photoUrl: editedPhotoUrl,
+                food: editedFood,
+
+
+
+            })
+            .then(() => {
+                alert('Data successfully updated!');
+                userForm.reset();
+                userForm.removeEventListener('submit', handleSubmit);
+                userForm.addEventListener('submit', handleSubmit);
+            })
+            .catch((error) => {
+                console.error('Error updating document: ', error);
+                alert('An error occurred while updating data. Please try again later.');
+            });
+    });
 }
 
 // Function to handle form submission for new data
-function handleUpdate(event) {
+async function handleSubmit(event) {
     event.preventDefault();
-    // Update the Firestore document with the edited data
-    const editedUsername = usernameInput.value;
-    const editedAddress = addressInput.value;
-    const editedDirection = directionInput.value;
-    const editedPhotoUrl = photoFileInput.value;
-    const editedFood = foodInput.value;
+    const username = document.getElementById('username').value;
+    const address = document.getElementById('address').value;
+    const direction = document.getElementById('direction').value;
+    const food = document.getElementById('food').value;
+    const photoUrl = document.getElementById('photoUrl');
 
-    db.collection('foods')
-        .doc(currentDocId)
-        .update({
-            username: editedUsername,
-            address: editedAddress,
-            direction: editedDirection,
-            photoUrl: editedPhotoUrl,
-            food: editedFood,
-        })
-        .then(() => {
-            alert('Data successfully updated!');
-            userForm.reset();
-            userForm.removeEventListener('submit', handleUpdate);
-            userForm.addEventListener('submit', handleSubmit);
-        })
-        .catch((error) => {
-            console.error('Error updating document: ', error);
-            alert('An error occurred while updating data. Please try again later.');
-        });
-}
+    // Check if an image is selected
+    if (photoUrl.files.length > 0) {
+        // Get the selected image file
+        const imageFile = photoUrl.files[0];
 
-// Function to handle form submission for new data
-function handleSubmit(event) {
-    event.preventDefault();
-    const username = usernameInput.value;
-    const address = addressInput.value;
-    const direction = directionInput.value;
-    const food = foodInput.value;
-    const photoFile = photoFileInput.files[0];
+        // Generate a unique filename for the image based on the food value
+        const filename = `${food.toLowerCase()}_${Date.now()}.jpg`;
 
-    // Validate that a photo was selected
-    if (!photoFile) {
-        alert('Please select an image.');
-        return;
-    }
+        // Upload the image to Firebase Storage
+        const storageRef = firebase.storage().ref(`food_images/${filename}`);
+        const uploadTask = storageRef.put(imageFile);
 
-    // Upload the image to Firebase Storage
-    const storageRef = firebase.storage().ref().child('food_images/' + photoFile.name);
-    const uploadTask = storageRef.put(photoFile);
-
-    // Monitor the image upload progress
-    uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-            // Progress monitoring (optional)
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            console.log('Upload progress: ' + progress + '%');
-        },
-        (error) => {
-            // Handle upload error
-            console.error('Error uploading image: ', error);
-            alert('An error occurred while uploading the image. Please try again later.');
-        },
-        () => {
-            // Upload completed, get the download URL
-            uploadTask.snapshot.ref.getDownloadURL().then((photoUrl) => {
-                // Continue with the submission, including the photoUrl
-                db.collection('foods')
-                    .add({
-                        username: username,
-                        address: address,
-                        direction: direction,
-                        food: food,
-                        photoUrl: photoUrl,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    })
-                    .then(() => {
-                        alert('Data submitted (with image)!');
-                        userForm.reset();
-                    })
-                    .catch((error) => {
-                        console.error('Error adding document: ', error);
-                        alert('An error occurred. Please try again later.');
+        // Monitor the upload progress
+        uploadTask.on('state_changed',
+            null,
+            (error) => {
+                console.error('Error uploading image: ', error);
+                alert('An error occurred while uploading the image. Please try again later.');
+            },
+            () => {
+                // Image uploaded successfully
+                // Get the download URL of the uploaded image
+                uploadTask.snapshot.ref.getDownloadURL()
+                    .then((downloadURL) => {
+                        // Store the data in Firestore, including the image URL
+                        db.collection('foods')
+                            .add({
+                                username: username,
+                                address: address,
+                                direction: direction,
+                                food: food,
+                                photoUrl: downloadURL, // Store the image URL
+                                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                            })
+                            .then(() => {
+                                alert('Data and image successfully submitted!');
+                                userForm.reset();
+                            })
+                            .catch((error) => {
+                                console.error('Error adding document: ', error);
+                                alert('An error occurred. Please try again later.');
+                            });
                     });
             });
-        }
-    );
+    } else {
+        // No image selected, submit data without an image
+        db.collection('foods')
+            .add({
+                username: username,
+                address: address,
+                direction: direction,
+                food: food,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            })
+            .then(() => {
+                alert('Data submitted (without image)!');
+                userForm.reset();
+            })
+            .catch((error) => {
+                console.error('Error adding document: ', error);
+                alert('An error occurred. Please try again later.');
+            });
+    }
 }
-
-// Attach an event listener to the form for handling data submission
-userForm.addEventListener('submit', handleSubmit);
+userForm.addEventListener('submit', handleSubmit);;
 
 // Function to display user data in the table
 function displayUserData(doc) {
@@ -153,17 +170,27 @@ function displayUserData(doc) {
 
     fields.forEach(field => {
         const td = document.createElement('td');
-        const fieldValue = doc.data()[field];
-        td.textContent = fieldValue || "N/A"; // Set to "N/A" if the field is missing in the document
+        if (doc.data()[field]) {
+            td.textContent = doc.data()[field];
+        } else {
+            td.textContent = "N/A"; // Set to "N/A" if the field is missing in the document
+        }
         tr.appendChild(td);
     });
 
     // Add action buttons
-    const editButton = createButton('Edit', 'btn-secondary', () => {
+    const editButton = document.createElement('button');
+    editButton.textContent = 'Edit';
+    editButton.setAttribute('class', 'btn btn-secondary');
+    editButton.addEventListener('click', () => {
         updateFormData(doc);
     });
 
-    const deleteButton = createButton('Delete', 'btn-danger', () => {
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = 'Delete';
+    deleteButton.setAttribute('class', 'btn btn-danger');
+    deleteButton.addEventListener('click', () => {
+        // Handle document deletion and photo removal
         handleDelete(doc);
     });
 
@@ -175,33 +202,28 @@ function displayUserData(doc) {
     userData.appendChild(tr);
 }
 
-// Function to create a button
-function createButton(text, className, onClick) {
-    const button = document.createElement('button');
-    button.textContent = text;
-    button.className = 'btn ' + className;
-    button.addEventListener('click', onClick);
-    return button;
-}
-
-// Function to handle the delete operation
+// Function to handle document deletion (including photo removal)
 function handleDelete(doc) {
+    // Get the photo URL from the document
     const photoUrl = doc.data().photoUrl;
-    if (photoUrl) {
-        const storageRef = firebase.storage().refFromURL(photoUrl);
-        storageRef.delete()
-            .then(() => {
-                console.log('Photo successfully deleted from storage.');
-            })
-            .catch((error) => {
-                console.error('Error deleting photo from storage: ', error);
-            });
-    }
+
+    // Delete the Firestore document
     db.collection('foods')
         .doc(doc.id)
         .delete()
         .then(() => {
-            alert('Data successfully deleted!');
+            // Document deleted, now delete the associated photo from Firebase Storage
+            if (photoUrl) {
+                const storageRef = firebase.storage().refFromURL(photoUrl);
+                storageRef.delete()
+                    .then(() => {
+                        console.log('Photo deleted from storage');
+                    })
+                    .catch((error) => {
+                        console.error('Error deleting photo from storage: ', error);
+                    });
+            }
+            alert('Data and photo successfully deleted!');
         })
         .catch((error) => {
             console.error('Error deleting document: ', error);
@@ -209,7 +231,7 @@ function handleDelete(doc) {
         });
 }
 
-// Fetch data from Firestore collection 'foods' and display it in the table
+// Fetch data from Firestore collection 'users' and display it in the table
 db.collection('foods')
     .get()
     .then((snapshot) => {
@@ -217,17 +239,16 @@ db.collection('foods')
             displayUserData(doc);
         });
     });
-
 // Function to handle the search operation
 function handleSearch() {
-    const searchValue = searchInput.value.trim().toLowerCase();
+    const searchInput = document.getElementById('searchInput').value.trim().toLowerCase();
     const tableRows = userData.getElementsByTagName('tr');
 
     for (let i = 1; i < tableRows.length; i++) { // Start from index 1 to skip the table header row
         const row = tableRows[i];
         const rowData = row.textContent.toLowerCase();
 
-        if (rowData.includes(searchValue)) {
+        if (rowData.includes(searchInput)) {
             row.style.display = ''; // Show the row if it matches the search input
         } else {
             row.style.display = 'none'; // Hide the row if it doesn't match the search input
@@ -236,4 +257,4 @@ function handleSearch() {
 }
 
 // Attach an event listener to the search button
-searchButton.addEventListener('click', handleSearch);
+document.getElementById('searchButton').addEventListener('click', handleSearch);
