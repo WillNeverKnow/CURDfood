@@ -75,6 +75,54 @@ function updateFormData(doc) {
 }
 
 // Function to handle form submission for new data
+async function compressImage(imageFile) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                // Set the canvas dimensions to the image's natural size
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+
+                // Draw the image on the canvas
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                // Convert canvas image to Blob with high image quality
+                canvas.toBlob(
+                    (blob) => {
+                        if (!blob) {
+                            // Handle the case when the blob is undefined
+                            reject(new Error('Compressed blob is undefined'));
+                            return;
+                        }
+
+                        resolve(blob);
+                    },
+                    'image/jpeg', // Use JPEG format
+                    0.8 // High quality setting
+                );
+            };
+
+            img.onerror = (error) => {
+                reject(error);
+            };
+        };
+
+        reader.onerror = (error) => {
+            reject(error);
+        };
+
+        reader.readAsDataURL(imageFile);
+    });
+}
+
+// Function to handle form submission for new data
 async function handleSubmit(event) {
     event.preventDefault();
     const username = document.getElementById('username').value;
